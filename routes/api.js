@@ -23,7 +23,7 @@ module.exports = function (app) {
       } = req.body;
 
       if (!issue_title || !issue_text || !created_by) {
-        return res.json({ error: "Required field(s) missing" });
+        return res.json({ error: "required field(s) missing" });
       }
 
       const newIssue = {
@@ -55,7 +55,7 @@ module.exports = function (app) {
       } = req.body;
 
       if (!_id) {
-        return res.json({ error: "Missing _id" });
+        return res.json({ error: "missing _id" });
       }
 
       const updates = {};
@@ -66,7 +66,7 @@ module.exports = function (app) {
       if (status_text) updates.status_text = status_text;
 
       if (Object.keys(updates).length === 0) {
-        return res.json({ error: "No updates provided", _id: _id });
+        return res.json({ error: "no update field(s) sent", _id: _id });
       }
 
       const issue = issues.find(
@@ -75,9 +75,9 @@ module.exports = function (app) {
       if (issue) {
         Object.assign(issue, updates);
         issue.updated_on = new Date(); // Update the timestamp
-        return res.json({ result: "Successfully update", _id: _id });
+        return res.json({ result: "successfully updated", _id: _id });
       } else {
-        return res.json({ error: "Could not update", _id: _id });
+        return res.json({ error: "could not update", _id: _id });
       }
     })
 
@@ -86,7 +86,7 @@ module.exports = function (app) {
       const { _id } = req.body;
 
       if (!_id) {
-        return res.json({ error: "Missing _id" });
+        return res.json({ error: "missing _id" });
       }
 
       const index = issues.findIndex(
@@ -94,9 +94,9 @@ module.exports = function (app) {
       );
       if (index !== -1) {
         issues.splice(index, 1);
-        return res.json({ result: "Successfully deleted", _id: _id });
+        return res.json({ result: "successfully deleted", _id: _id });
       } else {
-        return res.json({ error: "Could not delete", _id: _id });
+        return res.json({ error: "could not delete", _id: _id });
       }
     });
 };
