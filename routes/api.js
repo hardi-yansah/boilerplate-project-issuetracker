@@ -1,99 +1,102 @@
 "use strict";
 
-const issues = {};
-
 module.exports = function (app) {
+  let issues = []; // Simulated in-memory database
+
   app
     .route("/api/issues/:project")
 
     .get(function (req, res) {
-      let project = req.params.project;
-      const query = req.query;
-
-      const projectIssues = issues[project] || [];
-
-      const filteredIssues = projectIssues.filter((issue) => {
-        return Object.keys(query).every((key) => issue[key] == query[key]);
-      });
-
-      res.json(filteredIssues);
+      const project = req.params.project;
+      const projectIssues = issues.filter((issue) => issue.project === project);
+      res.json(projectIssues);
     })
 
     .post(function (req, res) {
-      let project = req.params.project;
-      const { issue_title, issue_text, created_by, assigned_to, status_text } =
-        req.body;
+      const project = req.params.project;
+      const {
+        issue_title,
+        issue_text,
+        created_by,
+        assigned_to = "",
+        status_text = "",
+      } = req.body;
 
       if (!issue_title || !issue_text || !created_by) {
         return res.json({ error: "Required field(s) missing" });
       }
 
-      const id = new Date().getTime().toString();
       const newIssue = {
-        _id: id,
+        _id: new Date().valueOf().toString(), // Unique ID
         issue_title,
         issue_text,
         created_by,
-        assigned_to: assigned_to || "",
-        status_text: status_text || "",
+        assigned_to,
+        status_text,
+        open: true,
         created_on: new Date(),
         updated_on: new Date(),
-        open: true,
+        project, // Associate with project
       };
 
-      if (!issues[project]) {
-        issues[project] = [];
-      }
-      issues[project].push(newIssue);
+      issues.push(newIssue);
       res.json(newIssue);
     })
 
     .put(function (req, res) {
-      let project = req.params.project;
-      const { _id, ...updates } = req.body;
+      const project = req.params.project;
+      const {
+        _id,
+        issue_title,
+        issue_text,
+        created_by,
+        assigned_to,
+        status_text,
+      } = req.body;
 
       if (!_id) {
         return res.json({ error: "Missing _id" });
       }
 
-      const projectIssues = issues[project] || [];
-      const issue = projectIssues.find((issue) => issue._id === _id);
+      const updates = {};
+      if (issue_title) updates.issue_title = issue_title;
+      if (issue_text) updates.issue_text = issue_text;
+      if (created_by) updates.created_by = created_by;
+      if (assigned_to) updates.assigned_to = assigned_to;
+      if (status_text) updates.status_text = status_text;
 
-      if (!issue) {
-        return res.json({ error: "Could not update", _id });
-      }
-
-      // If no fields to update
       if (Object.keys(updates).length === 0) {
-        return res.json({ error: "No updates provided", _id }); // Ensure _id is sent back
+        return res.json({ error: "No updates provided", _id: _id });
       }
 
-      // Update issue fields and set updated date
-      Object.keys(updates).forEach((key) => {
-        if (updates[key] !== "") issue[key] = updates[key];
-      });
-      issue.updated_on = new Date();
-
-      res.json({ result: "Successfully update", _id });
+      const issue = issues.find(
+        (issue) => issue._id === _id && issue.project === project
+      );
+      if (issue) {
+        Object.assign(issue, updates);
+        issue.updated_on = new Date(); // Update the timestamp
+        return res.json({ result: "Successfully update", _id: _id });
+      } else {
+        return res.json({ error: "Could not update", _id: _id });
+      }
     })
 
     .delete(function (req, res) {
-      let project = req.params.project;
+      const project = req.params.project;
       const { _id } = req.body;
 
       if (!_id) {
         return res.json({ error: "Missing _id" });
       }
 
-      const projectIssues = issues[project] || [];
-      const index = projectIssues.findIndex((issue) => issue._id === _id);
-
-      if (index === -1) {
-        return res.json({ error: "Could not delete", _id });
+      const index = issues.findIndex(
+        (issue) => issue._id === _id && issue.project === project
+      );
+      if (index !== -1) {
+        issues.splice(index, 1);
+        return res.json({ result: "Successfully deleted", _id: _id });
+      } else {
+        return res.json({ error: "Could not delete", _id: _id });
       }
-
-      projectIssues.splice(index, 1);
-
-      res.json({ result: "Successfully deleted", _id });
     });
 };
