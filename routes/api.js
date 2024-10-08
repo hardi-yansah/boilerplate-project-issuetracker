@@ -5,10 +5,17 @@ module.exports = function (app) {
 
   app
     .route("/api/issues/:project")
-
     .get(function (req, res) {
       const project = req.params.project;
-      const projectIssues = issues.filter((issue) => issue.project === project);
+      let projectIssues = issues.filter((issue) => issue.project === project);
+
+      // Apply filtering based on query parameters
+      Object.keys(req.query).forEach((key) => {
+        projectIssues = projectIssues.filter(
+          (issue) => issue[key] === req.query[key]
+        );
+      });
+
       res.json(projectIssues);
     })
 
